@@ -12,20 +12,28 @@ mass = 5
 v = 0
 f = 200
 
-friction = 100
+forces = [[0, 150], [.25, 160], [.73, 200], [1.2, 220], [1.7, 0]]
 
-force_duration = 1
-duration = 2
+friction = 100
 
 now = time.time ()
 last_time = now
 start = now
+force_idx = 0
 while True:
     now = time.time ()
     dt = now - last_time
+    since_start = now - start
 
-    if force_duration < now - start:
-        f = 0
+    cur_force = forces[force_idx]
+    if force_idx < len (forces) - 1:
+        next_force = forces[force_idx+1]
+
+        if since_start > next_force[0]:
+            force_idx += 1
+            cur_force = next_force
+
+    f = cur_force[1]
 
     p = sp.Popen (["xdotool", "getwindowgeometry", window_id],
                   stdout=sp.PIPE)
