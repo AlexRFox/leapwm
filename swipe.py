@@ -43,7 +43,7 @@ class swipe_listener (Leap.Listener):
             for finger in hand.fingers:
                 if finger.type() == 1:
                     pass
-#                    print finger.bone(3).next_joint
+                    #print finger.bone(3).next_joint
 
         for gesture in frame.gestures ():
             if gesture.type == Leap.Gesture.TYPE_SWIPE:
@@ -112,7 +112,8 @@ class swipe_listener (Leap.Listener):
                     x = int (m.group (1)) - 1
                     y = int (m.group (2)) - 45
 
-                    newx = int (int (x) + dist * gain)
+                    newx = max (1, int (int (x) + dist * gain))
+                    newx = min (newx, 7400)
 
                     p = sp.call (["xdotool", "windowmove", window_id,
                                   str (newx), str (y)])
