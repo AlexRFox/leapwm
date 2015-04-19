@@ -39,9 +39,19 @@ class swipe_listener (Leap.Listener):
         now = time.time () * 1000000
         dt = now - self.last_time
 
+        for hand in frame.hands:
+            for finger in hand.fingers:
+                if finger.type() == 1:
+                    pass
+#                    print finger.bone(3).next_joint
+
         for gesture in frame.gestures ():
             if gesture.type == Leap.Gesture.TYPE_SWIPE:
                 swipe = SwipeGesture (gesture)
+
+                if swipe.position[2] > 100:
+                    print "dead zone"
+                    continue
 
                 if gesture.id not in self.staged_swipes:
                     if now - self.last_frame < 500000 \
