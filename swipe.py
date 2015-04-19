@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-import Leap, sys, thread, time
+import Leap, sys, thread, time, re
+import subprocess as sp
 from Leap import CircleGesture, KeyTapGesture, ScreenTapGesture, SwipeGesture
 
 class swipe_listener (Leap.Listener):
@@ -14,6 +15,7 @@ class swipe_listener (Leap.Listener):
         self.staged_swipes = {}
         self.last_frame = 0
         self.last_time = 0
+        self.last_window_id = -1
 
     def on_connect(self, controller):
         print "Connected"
@@ -42,32 +44,68 @@ class swipe_listener (Leap.Listener):
                 swipe = SwipeGesture (gesture)
 
                 if gesture.id not in self.staged_swipes:
-                    self.staged_swipes[gesture.id] = [0, []]
+                    if now - self.last_frame < 500000 \
+                       and self.last_window_id > 0:
+                        window_id = self.last_window_id
+                    else:
+                        p = sp.Popen (["xdotool", "getwindowfocus"],
+                                      stdout=sp.PIPE)
+                        out, err = p.communicate ()
+
+                        window_id = out.strip ()
+                        self.last_window_id = window_id
+
+                    self.staged_swipes[gesture.id] = [0, [], window_id]
 
                 self.staged_swipes[gesture.id][0] += 1
                 self.staged_swipes[gesture.id][1].append (swipe)
 
                 if self.last_time == 0:
+                    print "foo"
                     continue
 
+                window_id = self.staged_swipes[gesture.id][2]
                 for swipe in self.staged_swipes[gesture.id][1]:
                     if self.last_frame == 0:
                         self.last_frame = frame.timestamp
+                        print "bar"
                         continue
 
                     frame_dt = frame.timestamp - self.last_frame
                     self.last_frame = frame.timestamp
 
-                    if frame_dt > 10000:
+                    if frame_dt > 450000:
+                        print "baz"
                         continue
 
                     uspeed = swipe.speed / 1000000
 
                     dist = uspeed * frame_dt
 
-                    gain = 1
+                    if swipe.direction[0] < 0:
+                        dist *= -1
 
-                    print dist * gain
+                    gain = 50
+
+                    p = sp.Popen (["xdotool", "getwindowgeometry", window_id],
+                                  stdout=sp.PIPE)
+                    out, err = p.communicate ()
+
+                    lines = out.split ("\n")
+
+                    if len (lines) < 3:
+                        print "quux"
+                        continue
+
+                    m = re.search ("(\d+),(\d+)", lines[1])
+
+                    x = int (m.group (1)) - 1
+                    y = int (m.group (2)) - 45
+
+                    newx = int (int (x) + dist * gain)
+
+                    p = sp.call (["xdotool", "windowmove", window_id,
+                                  str (newx), str (y)])
 
                 self.staged_swipes[gesture.id][1] = []
 
@@ -91,10 +129,5 @@ controller = Leap.Controller ()
 
 controller.add_listener (listener)
 
-print "Press Enter to quit..."
-try:
-    sys.stdin.readline ()
-except KeyboardInterrupt:
+while True:
     pass
-finally:
-    controller.remove_listener (listener)
