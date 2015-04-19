@@ -1,0 +1,11 @@
+requires a leap motion controller
+
+mpu.py is a server to control windows smoothly
+
+swipe.py watches for swipes, does some basic processing, and hands
+data off to mpu.py as if the swipes applied a force to the window
+
+requires xdotool
+
+assumes window decorations offset x by 1 and y by 45, which are the
+defaults for my fluxbox
