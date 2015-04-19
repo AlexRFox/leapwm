@@ -95,8 +95,6 @@ class swipe_listener (Leap.Listener):
                     if swipe.direction[0] < 0:
                         dist *= -1
 
-                    gain = 50
-
                     p = sp.Popen (["xdotool", "getwindowgeometry", window_id],
                                   stdout=sp.PIPE)
                     out, err = p.communicate ()
@@ -112,11 +110,33 @@ class swipe_listener (Leap.Listener):
                     x = int (m.group (1)) - 1
                     y = int (m.group (2)) - 45
 
-                    newx = max (1, int (int (x) + dist * gain))
-                    newx = min (newx, 7400)
+                    gain = 35
+                    diff_x = float (dist * gain)
 
-                    p = sp.call (["xdotool", "windowmove", window_id,
-                                  str (newx), str (y)])
+                    if diff_x != 0:
+                        PORT = 64659
+                        #PORT = 59812
+                        p = sp.Popen (["nc", "lorien", str (PORT)],
+                                      stdin=sp.PIPE)
+                        try:
+                            p.communicate ("-1, " + str (diff_x))
+                        except ValueError:
+                            print "choked"
+                            pass
+
+                        p = sp.Popen (["nc", "lorien", str (PORT)],
+                                      stdin=sp.PIPE)
+                        try:
+                            p.communicate ("-1, 0, .5")
+                        except ValueError:
+                            print "choked"
+                            pass
+
+#                    newx = max (1, int (int (x) + dist * gain))
+#                    newx = min (newx, 7400)
+
+#                    p = sp.call (["xdotool", "windowmove", window_id,
+#                                  str (newx), str (y)])
 
                 self.staged_swipes[gesture.id][1] = []
 
